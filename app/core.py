@@ -20,17 +20,26 @@ def validate_request(data: dict):
     specs/response-spec-v1.md.
     """
     # TODO: implement
-    if data.get("method") not in ["restconf", "netconf", "ansible", "netmiko-textfsm"]:
-        return {"status":"error","result":"invalid_method"}
-
-    if not validate_action(data.get("method"), data.get("action")):
-        return {"status":"error","result":"invalid_action"}
-
     if not(str(data.get("version")).isnumeric() and data.get("version") == 1):
         return {"status":"error","result":"invalid_version"}
 
+    if not data.get("router"):
+        return {"status":"error","result":"missing_router"}
+
     if data.get("router") not in ["10.0.29.101", "10.0.29.102", "10.0.29.103", "10.0.29.104", "10.0.29.105"]:
         return {"status":"error","result":"invalid_router"}
+
+    if not data.get("method"):
+        return {"status":"error","result":"missing_method"}
+
+    if data.get("method") not in ["restconf", "netconf", "ansible", "netmiko-textfsm"]:
+        return {"status":"error","result":"invalid_method"}
+
+    if not data.get("action"):
+        return {"status":"error","result":"missing_action"}
+
+    if not validate_action(data.get("method"), data.get("action")):
+        return {"status":"error","result":"invalid_action"}
 
     if not data.get("desired"):
         return {"status":"error","result":"missing_desired"}
