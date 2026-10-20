@@ -75,9 +75,9 @@ def process_request_file(path):
 
     try:
         data_yaml = yaml.safe_load(read_data)
-        return data_yaml
+        return validate_request(data_yaml)
     except:
         return {"status":"error","result":"invalid_yaml"}
 
 if __name__ == "__main__":
-    print(process_request_file("https://raw.githubusercontent.com/copter4310s/IPA2026-student-starter/refs/heads/main/sample-tests/webex-manual/07-plan-no-change.yaml"))
+    print(process_request_file("https://raw.githubusercontent.com/copter4310s/IPA2026-student-starter/refs/heads/main/sample-tests/part1/fixtures/17-version-before-router.yaml"))
