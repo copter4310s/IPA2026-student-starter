@@ -19,7 +19,7 @@ Starter นี้ยังไม่มีคำตอบ จุด `TODO` เป
 | `requirements.txt` | Python packages ที่ต้องติดตั้ง | ใช้ติดตั้ง dependencies |
 | `Dockerfile` | สร้าง image ที่มีโค้ด bot และ Ansible | ใช้เป็นจุดเริ่มต้นและตรวจว่า build ผ่าน |
 | `compose.yaml` | เปิด service `webhook` พร้อม health check | ตั้ง environment ของตนและใช้เปิด bot |
-| `.github/workflows/student-ci.yaml` | รัน public tests, build และตรวจ HTTP ใน image เมื่อ push `main` | ดูผล GitHub Actions ของ commit ล่าสุด |
+| `.github/workflows/student-ci.yaml` | รัน public tests, build/ตรวจ image และ push Docker Hub เมื่อ push `main` | ดูผล GitHub Actions ของ commit ล่าสุด |
 | `scripts/check_webhook_image.py` | ตรวจโค้ดและ HTTP ภายใน image โดยไม่ใช้ token | รันหลัง `docker compose build webhook` |
 | `README.md` | ภาพรวมและลำดับการทำงาน | เริ่มอ่านจากไฟล์นี้ |
 
@@ -431,7 +431,7 @@ python -m pytest -q tests
 
 1. นำ Starter ไปสร้าง **GitHub repo งานของตนเอง** ทำงานบน branch `main` หาก repo เป็น private ต้องให้ผู้สอนอ่านได้
 2. ทำ Parts 1–4 ตาม spec รัน public tests ระหว่างทำ
-3. ใช้ `Dockerfile`, `compose.yaml` และ `.github/workflows/student-ci.yaml` ที่ให้มา ตรวจว่า public tests, `docker compose build webhook` และ `python scripts/check_webhook_image.py` ผ่าน แล้วปรับ deployment ของตนตาม spec ไม่ต้อง publish image ไป Docker Hub
+3. ใช้ `Dockerfile`, `compose.yaml` และ workflow ที่ให้มา ตรวจว่า public tests, `docker compose build webhook` และ `python scripts/check_webhook_image.py` ผ่าน ตั้งค่า Docker Hub และ self-hosted runner แล้ว push เพื่อให้ CI publish image และ CD deploy image นั้น
 4. สร้าง Webex bot ของตน ตั้ง **ชื่อแสดงเป็นรหัสนักศึกษา 8 หลัก** เพิ่ม bot เข้าทั้งห้อง **IPA2026** และ **IPA2026 Exam Room** ก่อนลงทะเบียน แล้วเปิดโปรแกรม, webhook และ tunnel ให้พร้อมรับข้อความ
 5. ในห้อง **IPA2026** ลอง @mention bot ของตนพร้อม YAML หนึ่งไฟล์ ทดลอง `status → plan → apply → status → delete → delete ซ้ำ` บน router ที่ได้รับมอบหมายในช่วง `10.0.29.102`–`10.0.29.105` และ **interface ของตนเท่านั้น** `plan` ไม่แก้ router; `apply` และ `delete` แก้สถานะจริง ดู [ชุด YAML สำหรับลองส่งทีละข้อ](sample-tests/webex-manual/) ตัวอย่างพื้นฐานใน `sample-tests/part4/live/` และขั้นตอนใน `specs/live-test-part4.md`
 6. Push งานขึ้น `main` รอ Student CI ของ commit ล่าสุดผ่าน แล้วไปห้อง **IPA2026 Exam Room** เพื่อ `register → verify → grade → score` โดย @mention `IPA2026-Reference` ที่นั่น
@@ -485,7 +485,7 @@ flowchart TD
 
 `push` ทำให้ **Student CI** รันเอง แต่ยังไม่เริ่มการตรวจคะแนนของผู้สอน หลัง `register` ผูก repo กับ bot แล้ว นักศึกษาอาจใช้ `verify` เช็ก Student CI ของ commit ล่าสุดและลองถาม bot แบบไม่แนบ YAML พร้อมไฟล์ YAML ที่ตั้ง version ผิดโดยตั้งใจ โดยไม่ใช้สิทธิส่งตรวจ **เมื่อสั่ง `grade` ใน Webex เท่านั้น** `IPA2026-Reference` จึงอ่าน commit ล่าสุดของ `main` จาก repo ที่ลงทะเบียนและเริ่ม official CI หาก tests จบและ build ผ่าน จึงเริ่ม Live โดยส่งคำขอผ่าน Webex ไปยัง bot นักศึกษา และ grader อ่าน router เองเพื่อตรวจผลจริง
 
-- **Student CI**: workflow ที่ให้มาทำงานหลัง push `main` รัน public tests, build service `webhook` และตรวจ HTTP `/health` กับ `/webhook` ภายใน image โดยไม่ใช้ token ดูผลใน repo ของตนที่ **Actions → Student CI → run ของ commit ล่าสุด** ขั้น **Run public tests** แสดงจำนวนที่ผ่าน/ไม่ผ่านและรายละเอียดกรณีที่ไม่ผ่าน เช่น `88 passed`; ขั้น **Build webhook image** และ **Check webhook inside built image** แสดงผลผ่าน/ไม่ผ่านแยกกัน หากขั้นก่อนหน้าไม่ผ่าน ขั้นถัดไปจะถูกข้าม Student CI ไม่แสดงคะแนนทางการ CI/Live และไม่ส่งผลไปห้อง Webex อัตโนมัติ
+- **Student CI**: workflow ที่ให้มาทำงานหลัง push `main` รัน public tests, build service `webhook`, ตรวจ HTTP `/health` กับ `/webhook` ภายใน image โดยไม่ใช้ token แล้ว push image ไป Docker Hub ด้วย tag ของ commit SHA ดูผลใน repo ที่ **Actions → Student CI → run ของ commit ล่าสุด** หาก tests/build/smoke ไม่ผ่าน ขั้น push จะถูกข้ามและ CD จะไม่เริ่ม Student CI ไม่แสดงคะแนนทางการ CI/Live และไม่ส่งผลคะแนนไปห้อง Webex อัตโนมัติ
 - **การตรวจ CI จริง**: เมื่อสั่ง `grade` ผู้สอนดึง **commit ล่าสุดของ `main`** ไปรัน public และ hidden tests รวม 145 กรณี พร้อมตรวจ Docker build และ HTTP ภายใน image คะแนน CI คำนวณจาก tests ตามน้ำหนัก Parts 1–4 ในตาราง หาก build หรือการตรวจ image ไม่ผ่าน จะบันทึกคะแนน CI ที่ tests ทำได้และ **ไม่ตรวจ Live**
 - ขั้นรัน **145 tests จำกัดเวลา 120 วินาที** หากหมดเวลาก่อนมีผลครบ จะข้าม Live; เวลา 120 วินาทีนี้ไม่รวม checkout, ติดตั้ง dependencies, build และตรวจ image ซึ่งอยู่ใน workflow เดียวกัน โดย workflow ทั้งงานมีเพดาน 5 นาที
 - **Live test**: เมื่อ CI/build พร้อม ระบบส่ง YAML ผ่าน Webex ไปยัง bot นักศึกษา **ทีละกรณี 20 กรณี** ที่เลือกจากชุด 58 กรณี ตรวจทั้ง JSON ที่ตอบและสถานะจริงบน router คิดเป็น **10 คะแนน** กรณี `apply` ต้องเปลี่ยน router จริง; หลังตรวจระบบ cleanup interface ของการทดสอบ
@@ -507,6 +507,12 @@ python scripts/check_webhook_image.py
 หลังเขียน webhook เสร็จ ให้เก็บ `WEBEX_BOT_TOKEN`, `ROUTER_USER`, `ROUTER_PASS` ใน environment หรือไฟล์ `.env` บนเครื่องที่รัน bot (`.env` ถูกละไว้ใน `.gitignore`) แล้วลอง `docker compose up -d webhook`, `docker compose ps` และ `curl http://127.0.0.1:8000/health` การเปิด bot จริงต้องมี token และการตั้ง webhook/tunnel ตาม `specs/integration-spec-v1.md`; Student CI ตรวจ tests, build และ HTTP ภายใน image โดยไม่ใช้ secret เหล่านี้
 
 เมื่อ push แล้วให้ดูว่า **Student CI ผ่านที่ SHA ล่าสุดของ `main`** ก่อนส่ง `verify` เพราะ `verify` ตรวจผล workflow ชื่อ `student-ci.yaml` ของ SHA นั้นโดยตรง และไม่เริ่ม GitHub Actions ใหม่ให้ หากแก้ไฟล์แล้ว push อีกครั้ง ต้องรอผลของ SHA ใหม่
+
+### Docker Hub และ self-hosted CD
+
+workflow ใช้ Docker Hub repository ชื่อ `ipa2026-webhook` ใต้ namespace ของคุณ ให้สร้าง repository นี้และเพิ่ม GitHub Actions repository secrets ต่อไปนี้: `DOCKERHUB_USERNAME`, `DOCKERHUB_TOKEN`, `WEBEX_BOT_TOKEN`, `ROUTER_USER` และ `ROUTER_PASS`. `DOCKERHUB_TOKEN` ควรเป็น access token ที่มีสิทธิ์ push/pull.
+
+หลัง public tests, Docker build และ image smoke check ผ่านแล้ว Student CI จะ push image ที่ tag ด้วย commit SHA ไป Docker Hub. `runner.yaml` จะเริ่ม CD ต่อเมื่อ Student CI สำเร็จ โดยใช้ self-hosted runner ที่มี labels `self-hosted`, `Linux`, `X64` และติดตั้ง Docker Engine กับ Docker Compose plugin แล้ว CD จะ checkout SHA ที่ CI ตรวจ, pull image tag เดียวกัน และรัน `docker compose up --no-build`; ถ้าต้องการให้ service ต่อเนื่องหลัง job จบ ให้ runner อยู่บนเครื่องที่เปิดใช้งานตลอดเวลา ส่วน HTTPS tunnel/webhook registration ยังต้องตั้งและดูแลตาม Part 4 spec.
 
 ## ตัวอย่างการส่งตรวจในห้อง IPA2026 Exam Room
 

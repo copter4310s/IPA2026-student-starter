@@ -1,5 +1,6 @@
 services:
   webhook:
+    image: ${DOCKERHUB_USERNAME:-local}/ipa2026-webhook:${IMAGE_TAG:-latest}
     build:
       context: .
       dockerfile: Dockerfile

@@ -2,26 +2,53 @@ name: CD Pipeline
 
 on:
   workflow_run:
-    workflows: ["CI Pipeline"]
+    workflows: ["Student CI"]
     types: [completed]
     branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production-deploy
+  cancel-in-progress: false
 
 jobs:
   deploy:
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: [self-hosted, Linux, X64]
-    environment: production
-
+    timeout-minutes: 10
+    env:
+      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+      IMAGE_TAG: ${{ github.event.workflow_run.head_sha }}
+      WEBEX_BOT_TOKEN: ${{ secrets.WEBEX_BOT_TOKEN }}
+      ROUTER_USER: ${{ secrets.ROUTER_USER }}
+      ROUTER_PASS: ${{ secrets.ROUTER_PASS }}
     steps:
-      - name: Check out code
-        uses: actions/checkout@v4
+      - name: Check out the exact revision tested by CI
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
 
-      - name: Create .env
-        run: |
-          echo "WEBEX_BOT_TOKEN=${{ secrets.WEBEX_BOT_TOKEN }}" > .env
-          chmod 600 .env
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Up (pull from Hub, no build on prod)
+      - name: Pull the tested image
+        run: docker compose pull webhook
+
+      - name: Start the pulled image without building
+        run: docker compose up -d --no-build --remove-orphans webhook
+
+      - name: Check deployed webhook health
         run: |
-          docker compose -f compose.yml up -d --build
-          docker compose ps
+          for attempt in $(seq 1 12); do
+            if curl --fail --silent http://127.0.0.1:${HOST_PORT:-8000}/health; then
+              exit 0
+            fi
+            sleep 5
+          done
+          docker compose logs --tail=100 webhook
+          exit 1

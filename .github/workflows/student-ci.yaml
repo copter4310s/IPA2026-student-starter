@@ -14,9 +14,12 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  test-and-build:
+  test-build-push:
     runs-on: ubuntu-24.04
-    timeout-minutes: 10
+    timeout-minutes: 15
+    env:
+      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+      IMAGE_TAG: ${{ github.sha }}
     steps:
       - name: Check out submission
         uses: actions/checkout@v6
@@ -34,7 +37,23 @@ jobs:
         run: timeout 120s python -m pytest -q tests
 
       - name: Build webhook image
-        run: timeout 90s docker compose build webhook
+        run: timeout 180s docker compose build webhook
 
       - name: Check webhook inside built image
         run: timeout 35s python scripts/check_webhook_image.py
+
+      - name: Validate Docker Hub secrets
+        env:
+          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+        run: |
+          test -n "$DOCKERHUB_USERNAME" || { echo "Missing DOCKERHUB_USERNAME repository secret"; exit 1; }
+          test -n "$DOCKERHUB_TOKEN" || { echo "Missing DOCKERHUB_TOKEN repository secret"; exit 1; }
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Push tested image to Docker Hub
+        run: docker compose push webhook
