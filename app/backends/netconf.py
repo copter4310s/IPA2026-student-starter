@@ -16,7 +16,7 @@ NATIVE = "http://cisco.com/ns/yang/Cisco-IOS-XE-native"
 def _get(router, filter_xml):
     with manager.connect(host=router, port=830, username=os.getenv("ROUTER_USER", ""),
                          password=os.getenv("ROUTER_PASS", ""), hostkey_verify=False,
-                         device_params={"name": "iosxe"}, timeout=10) as session:
+                         device_params={"name": "iosxe"}, timeout=10, disabled_algorithms={"pubkeys": ["rsa-sha2-256", "rsa-sha2-512"]}) as session:
         return session.get_config(source="running", filter=filter_xml).data_xml
 
 
