@@ -17,6 +17,7 @@ jobs:
   deploy:
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: [self-hosted, Linux, X64]
+    environment: production
     timeout-minutes: 10
     env:
       DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}

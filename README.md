@@ -510,7 +510,7 @@ python scripts/check_webhook_image.py
 
 ### Docker Hub และ self-hosted CD
 
-workflow ใช้ Docker Hub repository ชื่อ `ipa2026-webhook` ใต้ namespace ของคุณ ให้สร้าง repository นี้และเพิ่ม GitHub Actions repository secrets ต่อไปนี้: `DOCKERHUB_USERNAME`, `DOCKERHUB_TOKEN`, `WEBEX_BOT_TOKEN`, `ROUTER_USER` และ `ROUTER_PASS`. `DOCKERHUB_TOKEN` ควรเป็น access token ที่มีสิทธิ์ push/pull.
+workflow ใช้ GitHub Environment ชื่อ `production` ให้สร้าง environment นี้ใน Settings → Environments และเพิ่ม environment secrets: `DOCKERHUB_USERNAME`, `DOCKERHUB_TOKEN`, `WEBEX_BOT_TOKEN`, `ROUTER_USER` และ `ROUTER_PASS`. `DOCKERHUB_TOKEN` ควรเป็น access token ที่มีสิทธิ์ push/pull. สร้าง Docker Hub repository ชื่อ `ipa2026-webhook` ใต้ namespace ของบัญชีเดียวกันด้วย.
 
 หลัง public tests, Docker build และ image smoke check ผ่านแล้ว Student CI จะ push image ที่ tag ด้วย commit SHA ไป Docker Hub. `runner.yaml` จะเริ่ม CD ต่อเมื่อ Student CI สำเร็จ โดยใช้ self-hosted runner ที่มี labels `self-hosted`, `Linux`, `X64` และติดตั้ง Docker Engine กับ Docker Compose plugin แล้ว CD จะ checkout SHA ที่ CI ตรวจ, pull image tag เดียวกัน และรัน `docker compose up --no-build`; ถ้าต้องการให้ service ต่อเนื่องหลัง job จบ ให้ runner อยู่บนเครื่องที่เปิดใช้งานตลอดเวลา ส่วน HTTPS tunnel/webhook registration ยังต้องตั้งและดูแลตาม Part 4 spec.
 
