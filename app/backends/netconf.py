@@ -16,14 +16,14 @@ NATIVE = "http://cisco.com/ns/yang/Cisco-IOS-XE-native"
 def _get(router, filter_xml):
     with manager.connect(host=router, port=830, username=os.getenv("ROUTER_USER", ""),
                          password=os.getenv("ROUTER_PASS", ""), hostkey_verify=False,
-                         device_params={"name": "iosxe"}, timeout=10) as session:
+                         device_params={"name": "iosxe"}, disabled_algorithms={"pubkeys": ["rsa-sha2-256", "rsa-sha2-512"]}, timeout=10) as session:
         return session.get_config(source="running", filter=filter_xml).data_xml
 
 
 def _edit(router, config_xml):
     with manager.connect(host=router, port=830, username=os.getenv("ROUTER_USER", ""),
                          password=os.getenv("ROUTER_PASS", ""), hostkey_verify=False,
-                         device_params={"name": "iosxe"}, timeout=10) as session:
+                         device_params={"name": "iosxe"}, disabled_algorithms={"pubkeys": ["rsa-sha2-256", "rsa-sha2-512"]}, timeout=10) as session:
         session.edit_config(target="running", config=config_xml)
 
 
@@ -35,7 +35,7 @@ def _error(exc):
     elif isinstance(exc, (ConnectionError, TimeoutError)) or "timeout" in name or "transport" in name or "ssh" in name or "connection" in name:
         code = "connection_failed"
     else:
-        code = exc
+        code = "backend_failed"
     return {"status": "error", "result": code}
 
 
