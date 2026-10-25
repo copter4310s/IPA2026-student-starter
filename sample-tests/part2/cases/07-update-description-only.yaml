@@ -1,0 +1,9 @@
+fixture: 07-update-description-only.yaml
+expected:
+  status: ok
+  result: planned
+  operation: update
+  changes:
+    description:
+      from: IPA2026-TEST-826
+      to: IPA2026-TEST-826-NEW

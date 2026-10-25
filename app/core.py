@@ -37,7 +37,7 @@ def _error(result):
 
 
 def validate_request(data: dict):
-    """Validate a parsed request and return an error, or ``None`` if valid."""
+    """Validate a parsed request and return an error, or ``True`` if valid."""
     if not isinstance(data, Mapping):
         return _error("invalid_yaml")
 
@@ -80,21 +80,28 @@ def validate_request(data: dict):
         if not isinstance(interface["admin_state"], str) or interface["admin_state"] not in {"up", "down"}:
             return _error("invalid_admin_state")
 
-    return None
+    return True
 
 
 def process_request_file(path):
     """Load and validate one YAML request file, returning its response."""
+    data, error = load_request_data(path)
+    if error is not None:
+        return error
+    validation_error = validate_request(data)
+    if validation_error is not True:
+        return validation_error
+    return {"status": "ok", "result": "accepted"}
+
+
+def load_request_data(path):
+    """Parse one YAML file, returning ``(mapping, error_response)``."""
     try:
         with Path(path).open("r", encoding="utf-8") as request_file:
             data = yaml.safe_load(request_file)
     except (OSError, UnicodeError, yaml.YAMLError):
-        return _error("invalid_yaml")
+        return None, _error("invalid_yaml")
 
     if not isinstance(data, Mapping):
-        return _error("invalid_yaml")
-
-    validation_error = validate_request(data)
-    if validation_error is not None:
-        return validation_error
-    return {"status": "ok", "result": "accepted"}
+        return None, _error("invalid_yaml")
+    return data, None

@@ -1,0 +1,10 @@
+desired:
+  name: Loopback825
+  ipv4: 172.29.85.1/32
+  description: IPA2026-TEST-825
+  admin_state: down
+current:
+  name: Loopback825
+  ipv4: 172.29.85.1/32
+  description: IPA2026-TEST-825
+  admin_state: up
