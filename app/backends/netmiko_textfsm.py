@@ -8,9 +8,8 @@ from netmiko import ConnectHandler
 def _connect(router):
     return ConnectHandler(device_type="cisco_ios", host=router,
                          username=os.getenv("ROUTER_USER", ""),
-                         password=os.getenv("ROUTER_PASS", ""),
-                         disabled_algorithms={"pubkeys": ["rsa-sha2-256", "rsa-sha2-512"]},
-                         timeout=10)
+                         password=os.getenv("ROUTER_PASS", ""), timeout=10)
+
 
 def _error(exc):
     name = type(exc).__name__.lower()
