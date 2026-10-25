@@ -35,7 +35,7 @@ def _error(exc):
     elif isinstance(exc, (ConnectionError, TimeoutError)) or "timeout" in name or "transport" in name or "ssh" in name or "connection" in name:
         code = "connection_failed"
     else:
-        code = "backend_failed"
+        code = exc
     return {"status": "error", "result": code}
 
 
