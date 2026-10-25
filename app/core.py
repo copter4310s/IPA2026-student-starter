@@ -37,25 +37,27 @@ def _error(result):
 
 
 def validate_request(data: dict):
-    """Validate a parsed request and return an error, or ``True`` if valid."""
-    if not isinstance(data, Mapping):
-        return _error("invalid_yaml")
+    """
+    Validate one IPA2026 desired-state request.
 
-    # Validation order is part of the public request contract.
-    version = data.get("version")
-    if type(version) is not int or version != 1:
-        return _error("invalid_version")
+    Return a response dictionary according to
+    specs/response-spec-v1.md.
+    """
+    # TODO: implement
+    if data.get("method") not in ["restconf", "netconf", "ansible", "netmiko-textfsm"]:
+        return {"status":"error","result":"invalid_method"}
 
-    if "router" not in data or data["router"] is None or data["router"] == "":
-        return _error("missing_router")
-    if not isinstance(data["router"], str) or data["router"] not in ALLOWED_ROUTERS:
-        return _error("invalid_router")
+    if not validate_action(data.get("method"), data.get("action")):
+        return {"status":"error","result":"invalid_action"}
 
-    if "method" not in data or data["method"] is None or data["method"] == "":
-        return _error("missing_method")
-    method = data["method"]
-    if not isinstance(method, str) or method not in ALLOWED_ACTIONS:
-        return _error("invalid_method")
+    if not(str(data.get("version")).isnumeric() and data.get("version") == 1):
+        return {"status":"error","result":"invalid_version"}
+
+    if data.get("router") not in ["10.0.29.101", "10.0.29.102", "10.0.29.103", "10.0.29.104", "10.0.29.105"]:
+        return {"status":"error","result":"invalid_router"}
+
+    if not data.get("desired"):
+        return {"status":"error","result":"missing_desired"}
 
     if "action" not in data or data["action"] is None or data["action"] == "":
         return _error("missing_action")
@@ -84,24 +86,18 @@ def validate_request(data: dict):
 
 
 def process_request_file(path):
-    """Load and validate one YAML request file, returning its response."""
-    data, error = load_request_data(path)
-    if error is not None:
-        return error
-    validation_error = validate_request(data)
-    if validation_error is not True:
-        return validation_error
-    return {"status": "ok", "result": "accepted"}
+    """
+    Read a YAML request file, validate it,
+    and return a response dictionary.
+    """
+    # TODO: implement
+    read_data = requests.get(path).content
 
-
-def load_request_data(path):
-    """Parse one YAML file, returning ``(mapping, error_response)``."""
     try:
-        with Path(path).open("r", encoding="utf-8") as request_file:
-            data = yaml.safe_load(request_file)
-    except (OSError, UnicodeError, yaml.YAMLError):
-        return None, _error("invalid_yaml")
+        data_yaml = yaml.safe_load(read_data)
+        return data_yaml
+    except:
+        return {"status":"error","result":"invalid_yaml"}
 
-    if not isinstance(data, Mapping):
-        return None, _error("invalid_yaml")
-    return data, None
+if __name__ == "__main__":
+    print(process_request_file("https://raw.githubusercontent.com/copter4310s/IPA2026-student-starter/refs/heads/main/sample-tests/webex-manual/07-plan-no-change.yaml"))
