@@ -16,14 +16,15 @@ NATIVE = "http://cisco.com/ns/yang/Cisco-IOS-XE-native"
 def _get(router, filter_xml):
     with manager.connect(host=router, port=830, username=os.getenv("ROUTER_USER", ""),
                          password=os.getenv("ROUTER_PASS", ""), hostkey_verify=False,
-                         device_params={"name": "iosxe"}, disabled_algorithms={"pubkeys": ["rsa-sha2-256", "rsa-sha2-512"]}, timeout=10) as session:
+                         allow_agent=False, look_for_keys=False,
+                         device_params={"name": "iosxe"}, timeout=10) as session:
         return session.get_config(source="running", filter=filter_xml).data_xml
-
 
 def _edit(router, config_xml):
     with manager.connect(host=router, port=830, username=os.getenv("ROUTER_USER", ""),
                          password=os.getenv("ROUTER_PASS", ""), hostkey_verify=False,
-                         device_params={"name": "iosxe"}, disabled_algorithms={"pubkeys": ["rsa-sha2-256", "rsa-sha2-512"]}, timeout=10) as session:
+                         allow_agent=False, look_for_keys=False,
+                         device_params={"name": "iosxe"}, timeout=10) as session:
         session.edit_config(target="running", config=config_xml)
 
 
@@ -43,8 +44,17 @@ def _tag(ns, name):
     return f"{{{ns}}}{name}"
 
 
+def _status_filter(interface_name):
+    """Build the NETCONF ``filter`` wrapper around an IETF subtree filter."""
+    root = ET.Element(_tag(BASE, "filter"), {"type": "subtree"})
+    interfaces = ET.SubElement(root, _tag(IETF, "interfaces"))
+    interface = ET.SubElement(interfaces, _tag(IETF, "interface"))
+    ET.SubElement(interface, _tag(IETF, "name")).text = interface_name
+    return ET.tostring(root, encoding="unicode")
+
+
 def get_interface_state(router, interface_name, netconf_get_config=None):
-    flt = f'<interfaces xmlns="{IETF}"><interface><name>{interface_name}</name></interface></interfaces>'
+    flt = _status_filter(interface_name)
     try:
         xml = (netconf_get_config or _get)(router, flt)
         root = ET.fromstring(xml)

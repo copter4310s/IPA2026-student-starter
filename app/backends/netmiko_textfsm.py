@@ -29,7 +29,6 @@ def _get(router, interface_name):
         descriptions = conn.send_command("show interfaces description", use_textfsm=True)
     return ip_info, descriptions
 
-
 def _full_name(name):
     if name.startswith("Lo") and name[2:].isdigit():
         return "Loopback" + name[2:]
